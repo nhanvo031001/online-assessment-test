@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Secure User Info API
+  version: 1.0.0
+  description: >
+    Retrieves encrypted user information using asymmetric encryption (RSA).
+    Clients must include a JWT and their public key.
+
+servers:
+  - url: https://api.example.com
+
+paths:
+  /api/users/{id}:
+    get:
+      summary: Get encrypted user info by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier of the user
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Encrypted user information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                    description: Base64-encoded RSA-encrypted user data
+                    example: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A..."
+
+        '400':
+          description: Bad Request – Missing public key or malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Missing client public key or malformed request."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '401':
+          description: Unauthorized – JWT is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Unauthorized – JWT is missing, invalid, or expired."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '403':
+          description: Forbidden – Authenticated but not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Access denied – you are not allowed to access this resource."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '404':
+          description: User Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "User not found."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '405':
+          description: Method Not Allowed – this endpoint only supports GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "HTTP method not allowed – this endpoint only supports GET."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '429':
+          description: Too Many Requests – Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Too many requests – rate limit exceeded. Try again later."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Internal server error. Please contact support."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '503':
+          description: Service Unavailable – Server down or overloaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Service is currently unavailable. Please try again later."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+        '504':
+          description: Gateway Timeout – Upstream service did not respond
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Request timed out. Backend service did not respond."
+                timestamp: "2024-06-07T14:22:35Z"
+                path: "/api/users/123"
+
+      tags:
+        - Users
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
