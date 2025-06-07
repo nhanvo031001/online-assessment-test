@@ -20,6 +20,12 @@ paths:
           description: Unique identifier of the user
           schema:
             type: string
+        - name: x-client-public-key
+          in: header
+          required: true
+          description: Base64-encoded public RSA key of the client
+          schema:
+            type: string
       security:
         - bearerAuth: []
       responses:
