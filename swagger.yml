@@ -28,12 +28,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: string
-                    description: Base64-encoded RSA-encrypted user data
-                    example: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A..."
+                $ref: '#/components/schemas/GetUserResponse'
+              example:
+                data: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A"
 
         '400':
           description: Bad Request – Missing public key or malformed request
@@ -145,6 +142,12 @@ components:
       bearerFormat: JWT
 
   schemas:
+    GetUserResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          description: Base64-encoded RSA-encrypted user data
     ErrorResponse:
       type: object
       properties:
