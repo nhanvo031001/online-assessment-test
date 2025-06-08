@@ -26,7 +26,7 @@ class QuestionTwoTests {
         for (String[] testCase : testCases) {
             String input = testCase[0];
             String expected = testCase[1];
-            String actual = QuestionTwo.longestSubstringWithoutRepeating(input); // Assuming method is in LongestSubstring class
+            String actual = QuestionTwo.longestSubstringWithoutRepeating(input);
             assertEquals(expected, actual, "Failed for input: " + input);
         }
     }
