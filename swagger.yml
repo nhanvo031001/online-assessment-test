@@ -1,166 +1,134 @@
 openapi: 3.0.3
 info:
-  title: Secure User Info API
+  title: User API
   version: 1.0.0
   description: >
-    Retrieves encrypted user information using asymmetric encryption (RSA).
-    Clients must include a JWT and their public key.
+    Create and retrieve users.  
+    All calls over HTTPS and protected by RSA digital signatures.
 
 servers:
-  - url: https://api.example.com
+  - url: https://api.example.com/v1
+    description: Production
 
 paths:
-  /api/users/{id}:
+  /users:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      parameters:
+        - name: X-Client-Signature
+          in: header
+          required: true
+          description: >
+            RSA signature of the raw JSON payload.  
+            Client signs with its private key; server verifies with the client's public key.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: User created
+          headers:
+            X-Server-Signature:
+              description: RSA signature of the response JSON
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Missing or invalid signature
+        '500':
+          description: Server error
+
+  /users/{id}:
     get:
-      summary: Get encrypted user info by ID
+      summary: Retrieve user by ID
+      tags:
+        - Users
       parameters:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user
+          description: Numeric user identifier
           schema:
-            type: string
-        - name: x-client-public-key
+            type: integer
+            format: int64
+        - name: X-Client-Signature
           in: header
           required: true
-          description: Base64-encoded public RSA key of the client
+          description: >
+            RSA signature of the canonical request string (e.g. path + timestamp).  
+            Client signs with its private key; server verifies with the client's public key.
           schema:
             type: string
-      security:
-        - bearerAuth: []
       responses:
         '200':
-          description: Encrypted user information
+          description: User found
+          headers:
+            X-Server-Signature:
+              description: RSA signature of the response JSON
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetUserResponse'
-              example:
-                data: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A"
-
-        '400':
-          description: Bad Request – Missing public key or malformed request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Missing client public key or malformed request."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
+                $ref: '#/components/schemas/UserDTO'
         '401':
-          description: Unauthorized – JWT is missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Unauthorized – JWT is missing, invalid, or expired."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-        '403':
-          description: Forbidden – Authenticated but not allowed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Access denied – you are not allowed to access this resource."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
+          description: Missing or invalid signature
         '404':
-          description: User Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "User not found."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-        '405':
-          description: Method Not Allowed – this endpoint only supports GET
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "HTTP method not allowed – this endpoint only supports GET."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-        '429':
-          description: Too Many Requests – Rate limit exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Too many requests – rate limit exceeded. Try again later."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
+          description: User not found
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Internal server error. Please contact support."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-        '503':
-          description: Service Unavailable – Server down or overloaded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Service is currently unavailable. Please try again later."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-        '504':
-          description: Gateway Timeout – Upstream service did not respond
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                error: "Request timed out. Backend service did not respond."
-                timestamp: "2024-06-07T14:22:35Z"
-                path: "/api/users/123"
-
-      tags:
-        - Users
+          description: Server error
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    SignatureAuth:
+      type: apiKey
+      in: header
+      name: X-Client-Signature
+      description: RSA signature header
 
   schemas:
-    GetUserResponse:
+    UserDTO:
       type: object
+      required:
+        - id
+        - name
+        - email
       properties:
-        data:
+        id:
+          type: integer
+          format: int64
+        name:
           type: string
-          description: Base64-encoded RSA-encrypted user data
-    ErrorResponse:
-      type: object
-      properties:
-        error:
+        email:
           type: string
-        timestamp:
+          format: email
+        createdAt:
           type: string
           format: date-time
-        path:
+        updatedAt:
           type: string
+          format: date-time
+
+    UserCreateRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
